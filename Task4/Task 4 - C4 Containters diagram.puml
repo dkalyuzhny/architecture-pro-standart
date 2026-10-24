@@ -1,0 +1,39 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Передача депозитных ставок — C4 Container, MVP
+SHOW_PERSON_OUTLINE()
+LAYOUT_TOP_DOWN()
+
+Person(author, "Автор ставок", "Сотрудник кредитного отдела")
+Person(approver, "Согласующий", "Сотрудник депозитного бэк-офиса")
+
+System_Boundary(registryBoundary, "Реестр депозитных ставок") {
+    Container(app, "Приложение реестра", "Серверное приложение", "Импорт XLS, согласование, публикация, API и фоновый обмен")
+    ContainerDb(db, "База реестра", "MS SQL", "Ставки, версии, аудит, outbox и состояния доставки")
+}
+
+Boundary(integration, "Интеграционный контур") {
+    Container(gateway, "Файловый шлюз банка", "SFTP-клиент", "Передача пакетов ставок и получение квитанций")
+}
+
+System_Ext(cc, "Система кол-центра банка", "Поиск общих ставок, ограниченный кэш и контроль свежести")
+
+Enterprise_Boundary(partnerBoundary, "Внешний контур партнёра") {
+    System_Ext(partner, "Система партнёрского кол-центра", "SFTP-каталоги, импорт ставок, локальное хранение и интерфейс операторов")
+}
+
+Rel(author, app, "Загружает XLS со ставками", "HTTPS")
+Rel(approver, app, "Согласовывает публикацию", "HTTPS")
+
+Rel(app, db, "Сохраняет версии, задания и аудит; читает данные", "SQL")
+Rel(cc, app, "Читает общие опубликованные ставки", "HTTPS API")
+
+Rel(app, gateway, "Передаёт подписанные пакеты общих ставок", "Внутренний интерфейс шлюза")
+Rel(gateway, app, "Возвращает квитанции применения", "Внутренний интерфейс шлюза")
+
+Rel(gateway, partner, "Загружает полный снимок общих ставок", "SFTP")
+Rel(partner, gateway, "Предоставляет квитанцию применения", "SFTP")
+
+SHOW_LEGEND()
+@enduml

@@ -1,0 +1,33 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+title Передача депозитных ставок — C4 Context, MVP
+SHOW_PERSON_OUTLINE()
+LAYOUT_TOP_DOWN()
+
+Person(author, "Сотрудник кредитного отдела", "Рассчитывает депозитные ставки в XLS")
+Person(approver, "Сотрудник депозитного бэк-офиса", "Проверяет и согласовывает публикацию")
+
+Enterprise_Boundary(bank, "Банк «Стандарт»") {
+    System(registry, "Реестр депозитных ставок", "Единый источник общих и персональных условий, версий и истории")
+    System_Ext(cc, "Система кол-центра банка", "Предоставляет операторам общие ставки")
+    System_Ext(site, "Публичный сайт Банка", "Показывает общие депозитные условия")
+    System_Ext(ib, "Интернет-банк", "Показывает общие и персональные условия")
+}
+
+Enterprise_Boundary(partnerBoundary, "Внешний контур партнёра") {
+    System_Ext(partner, "Система партнёрского кол-центра", "Хранит локальную копию общих ставок")
+}
+
+Rel(author, registry, "Загружает рассчитанные ставки", "XLS / HTTPS")
+Rel(approver, registry, "Проверяет и согласовывает публикацию", "HTTPS")
+
+Rel(cc, registry, "Получает общие опубликованные ставки", "HTTPS API")
+Rel(site, registry, "Получает общие опубликованные ставки", "HTTPS API")
+Rel(registry, ib, "Публикует общие и персональные условия", "Асинхронный обмен через интеграционный контур")
+
+Rel(registry, partner, "Передаёт полный снимок общих ставок", "Файлы / SFTP через файловый шлюз банка")
+Rel(partner, registry, "Возвращает подтверждение применения", "Файл-квитанция / SFTP через файловый шлюз банка")
+
+SHOW_LEGEND()
+@enduml
